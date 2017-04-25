@@ -1,0 +1,157 @@
+Origin: http://www.csupomona.edu/~bldewolf/dhcp-uid/
+Bug: https://bugs.launchpad.net/ubuntu/+source/maas/+bug/1069570
+Description: add entry configuration option 'ignore-client-uids'
+--- a/common/conflex.c
++++ b/common/conflex.c
+@@ -1065,6 +1065,8 @@ intern(char *atom, enum dhcp_token dfv)
+ 			return IF;
+ 		if (!strcasecmp (atom + 1, "s"))
+ 			return IS;
++		if (!strcasecmp (atom + 1, "gnore-client-uids"))
++			return IGNORE_CLIENT_UIDS;
+ 		if (!strcasecmp (atom + 1, "gnore"))
+ 			return IGNORE;
+ 		break;
+--- a/includes/dhcpd.h
++++ b/includes/dhcpd.h
+@@ -763,6 +763,8 @@ struct lease_state {
+ #endif
+ #endif
+ 
++#define SV_IGNORE_CLIENT_UIDS		78
++
+ #if !defined (DEFAULT_DEFAULT_LEASE_TIME)
+ # define DEFAULT_DEFAULT_LEASE_TIME 43200
+ #endif
+--- a/includes/dhctoken.h
++++ b/includes/dhctoken.h
+@@ -364,7 +364,8 @@ enum dhcp_token {
+ 	GETHOSTBYNAME = 665,
+ 	PRIMARY6 = 666,
+ 	SECONDARY6 = 667,
+-	TOKEN_INFINIBAND = 668
++	TOKEN_INFINIBAND = 668,
++	IGNORE_CLIENT_UIDS = 669
+ };
+ 
+ #define is_identifier(x)	((x) >= FIRST_TOKEN &&	\
+--- a/server/confpars.c
++++ b/server/confpars.c
+@@ -328,6 +328,7 @@ isc_result_t lease_file_subparse (struct
+ 	       | ONE_LEASE_PER_CLIENT boolean
+ 	       | GET_LEASE_HOSTNAMES boolean
+ 	       | USE_HOST_DECL_NAME boolean
++	       | IGNORE_CLIENT_UIDS boolean
+ 	       | NEXT_SERVER ip-addr-or-hostname SEMI
+ 	       | option_parameter
+ 	       | SERVER-IDENTIFIER ip-addr-or-hostname SEMI
+@@ -4103,6 +4104,10 @@ int parse_allow_deny (oc, cfile, flag)
+ 		code = SV_LEASEQUERY;
+ 		break;
+ 
++	      case IGNORE_CLIENT_UIDS:
++		code = SV_IGNORE_CLIENT_UIDS;
++		break;
++
+ 	      default:
+ 		parse_warn (cfile, "expecting allow/deny key");
+ 		skip_to_semi (cfile);
+--- a/server/dhcp.c
++++ b/server/dhcp.c
+@@ -2300,31 +2300,42 @@ void ack_lease (packet, lease, offer, wh
+ 	/* Update Client Last Transaction Time. */
+ 	lt->cltt = cur_time;
+ 
+-	/* Record the uid, if given... */
+-	oc = lookup_option (&dhcp_universe, packet -> options,
+-			    DHO_DHCP_CLIENT_IDENTIFIER);
+-	if (oc &&
+-	    evaluate_option_cache (&d1, packet, lease,
++	/* Only record the uid if we're not ignoring them */
++	oc = lookup_option (&server_universe, state -> options,
++			    SV_IGNORE_CLIENT_UIDS);
++	if (!oc ||
++	    !evaluate_boolean_option_cache (&ignorep, packet, lease,
+ 				   (struct client_state *)0,
+ 				   packet -> options, state -> options,
+ 				   &lease -> scope, oc, MDL)) {
+-		if (d1.len <= sizeof lt -> uid_buf) {
+-			memcpy (lt -> uid_buf, d1.data, d1.len);
+-			lt -> uid = lt -> uid_buf;
+-			lt -> uid_max = sizeof lt -> uid_buf;
+-			lt -> uid_len = d1.len;
+-		} else {
+-			unsigned char *tuid;
+-			lt -> uid_max = d1.len;
+-			lt -> uid_len = d1.len;
+-			tuid = (unsigned char *)dmalloc (lt -> uid_max, MDL);
+-			/* XXX inelegant */
+-			if (!tuid)
+-				log_fatal ("no memory for large uid.");
+-			memcpy (tuid, d1.data, lt -> uid_len);
+-			lt -> uid = tuid;
++		/* Record the uid, if given... */
++		oc = lookup_option (&dhcp_universe, packet -> options,
++				    DHO_DHCP_CLIENT_IDENTIFIER);
++		if (oc &&
++		    evaluate_option_cache (&d1, packet, lease,
++					   (struct client_state *)0,
++					   packet -> options,
++					   state -> options,
++					   &lease -> scope, oc, MDL)) {
++			if (d1.len <= sizeof lt -> uid_buf) {
++				memcpy (lt -> uid_buf, d1.data, d1.len);
++				lt -> uid = lt -> uid_buf;
++				lt -> uid_max = sizeof lt -> uid_buf;
++				lt -> uid_len = d1.len;
++			} else {
++				unsigned char *tuid;
++				lt -> uid_max = d1.len;
++				lt -> uid_len = d1.len;
++				tuid = (unsigned char *)
++					dmalloc (lt -> uid_max, MDL);
++				/* XXX inelegant */
++				if (!tuid)
++					log_fatal ("no memory for large uid.");
++				memcpy (tuid, d1.data, lt -> uid_len);
++				lt -> uid = tuid;
++			}
++			data_string_forget (&d1, MDL);
+ 		}
+-		data_string_forget (&d1, MDL);
+ 	}
+ 
+ 	if (host) {
+--- a/server/dhcpd.conf.5
++++ b/server/dhcpd.conf.5
+@@ -2335,6 +2335,20 @@ is the value for the option that the cli
+ must be a constant value.
+ .RE
+ .PP
++The 
++.I ignore-client-uids
++statement
++.RS 0.25i
++.PP
++.B ignore-client-uids \fIflag\fB;\fR
++.PP
++If the \fIignore-client-uids\fR statement is present and has a value of
++\fItrue\fR or \fIon\fR, clients will be handled as though they provided no UID
++and the actual provided UID will not be recorded.  If this statement is not
++present or has a value of \fIfalse\fR or \fIoff\fR, then client UIDs will be
++parsed and used as normal.
++.RE
++.PP
+ The
+ .I infinite-is-reserved
+ statement
+--- a/server/stables.c
++++ b/server/stables.c
+@@ -266,6 +266,7 @@ static struct option server_options[] =
+ 	{ "ldap-tls-randfile", "t",		&server_universe,  77, 1 },
+ #endif /* LDAP_USE_SSL */
+ #endif /* LDAP_CONFIGURATION */
++	{ "ignore-client-uids", "f",		&server_universe,  78, 1 },
+ 	{ NULL, NULL, NULL, 0, 0 }
+ };
+ 
