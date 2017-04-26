@@ -2562,10 +2562,10 @@ dhcp_failover_pool_dobalance(dhcp_failover_state_t *state,
 
 		if (lts > thresh) {
 			result = "IMBALANCED";
-			log_func = log_error;
+			log_func = log_error_c;
 		} else {
 			result = "balanced";
-			log_func = log_info;
+			log_func = log_info_c;
 		}
 
 		log_func("%s pool %lx %s  total %d  free %d  backup %d  "

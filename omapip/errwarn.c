@@ -51,7 +51,7 @@ static char fbuf [CVT_BUF_MAX + 1];
 
 /* Log an error message, then exit... */
 
-void log_fatal (const char * fmt, ... )
+void log_fatal_c (const char * fmt, ... )
 {
   va_list list;
 
@@ -71,7 +71,7 @@ void log_fatal (const char * fmt, ... )
   /* Also log it to stderr? */
   if (log_perror) {
 	  IGNORE_RET (write (STDERR_FILENO, mbuf, strlen (mbuf)));
-	  IGNORE_RET (write (STDERR_FILENO, "\n", 1));
+	  //IGNORE_RET (write (STDERR_FILENO, "\n", 1));
   }
 
 #if !defined (NOMINUM)
@@ -100,7 +100,7 @@ void log_fatal (const char * fmt, ... )
 
 /* Log an error message... */
 
-int log_error (const char * fmt, ...)
+int log_error_c (const char * fmt, ...)
 {
   va_list list;
 
@@ -119,7 +119,7 @@ int log_error (const char * fmt, ...)
 
   if (log_perror) {
 	  IGNORE_RET (write (STDERR_FILENO, mbuf, strlen (mbuf)));
-	  IGNORE_RET (write (STDERR_FILENO, "\n", 1));
+	  //IGNORE_RET (write (STDERR_FILENO, "\n", 1));
   }
 
   return 0;
@@ -127,7 +127,7 @@ int log_error (const char * fmt, ...)
 
 /* Log a note... */
 
-int log_info (const char *fmt, ...)
+int log_info_c (const char *fmt, ...)
 {
   va_list list;
 
@@ -146,7 +146,7 @@ int log_info (const char *fmt, ...)
 
   if (log_perror) {
 	  IGNORE_RET (write (STDERR_FILENO, mbuf, strlen (mbuf)));
-	  IGNORE_RET (write (STDERR_FILENO, "\n", 1));
+	  //IGNORE_RET (write (STDERR_FILENO, "\n", 1));
   }
 
   return 0;
@@ -154,7 +154,7 @@ int log_info (const char *fmt, ...)
 
 /* Log a debug message... */
 
-int log_debug (const char *fmt, ...)
+int log_debug_c (const char *fmt, ...)
 {
   va_list list;
 
@@ -173,7 +173,7 @@ int log_debug (const char *fmt, ...)
 
   if (log_perror) {
 	  IGNORE_RET (write (STDERR_FILENO, mbuf, strlen (mbuf)));
-	  IGNORE_RET (write (STDERR_FILENO, "\n", 1));
+	  //IGNORE_RET (write (STDERR_FILENO, "\n", 1));
   }
 
   return 0;

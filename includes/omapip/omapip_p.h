@@ -288,15 +288,29 @@ extern int log_priority;
 extern int log_perror;
 extern void (*log_cleanup) (void);
 
-void log_fatal (const char *, ...)
+void log_fatal_c (const char *, ...)
 	__attribute__((__format__(__printf__,1,2))) ISC_DHCP_NORETURN;
-int log_error (const char *, ...)
+int log_error_c (const char *, ...)
 	__attribute__((__format__(__printf__,1,2)));
-int log_info (const char *, ...)
+int log_info_c (const char *, ...)
 	__attribute__((__format__(__printf__,1,2)));
-int log_debug (const char *, ...)
+int log_debug_c (const char *, ...)
 	__attribute__((__format__(__printf__,1,2)));
 void do_percentm (char *obuf, const char *ibuf);
+
+#define log_call_fn(fnname,...) \
+	do{ \
+		fnname("[%s:%s:%d] ",__FILE__,__FUNCTION__,__LINE__);\
+		fnname(__VA_ARGS__);\
+		fnname("\n");\
+	}while(0)
+
+#define log_fatal(...) log_call_fn(log_fatal_c,__VA_ARGS__)  
+#define log_error(...) log_call_fn(log_error_c,__VA_ARGS__)  
+#define log_info(...) log_call_fn(log_info_c,__VA_ARGS__)  
+#define log_debug(...) log_call_fn(log_debug_c,__VA_ARGS__)  
+
+
 
 isc_result_t uerr2isc (int);
 isc_result_t ns_rcode_to_isc (int);
