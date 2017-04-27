@@ -2654,6 +2654,8 @@ int parse_executable_statement (result, cfile, lose, case_context)
 			if (option) {
 				token = next_token (&val,
 						    (unsigned *)0, cfile);
+				log_info("token [%d][%s] ret[%p] .name %s .format %s .universe %p code %d refcnt %d",token,val,option,
+						option->name,option->format,option->universe,option->code,option->refcnt);
 				status = parse_option_statement
 						(result, cfile, 1, option,
 						 supersede_option_statement);
@@ -4250,6 +4252,7 @@ int parse_non_binary (expr, cfile, lose, context)
 		break;
 
 	      case FILENAME:
+	    log_info("FILENAME");
 		token = next_token (&val, (unsigned *)0, cfile);
 		if (!expression_allocate (expr, MDL))
 			log_fatal ("can't allocate expression");
@@ -5358,6 +5361,7 @@ int parse_option_token (rv, cfile, fmt, expr, uniform, lookups)
 			parse_warn (cfile, "unknown value");
 			goto foo;
 		}
+		log_info("[%s][%s] enumeration [%p] .name [%s] .value[%d]",f,val,e,e->name,e->value);
 		if (!make_const_data (&t, &e -> value, len, 0, 1, MDL))
 			return 0;
 		break;

@@ -371,7 +371,7 @@ int parse_statement (cfile, group, type, host_decl, declaration)
 	unsigned code;
 
 	token = peek_token (&val, (unsigned *)0, cfile);
-
+	log_info("token [%d][%s]",token,val);
 	switch (token) {
 	      case INCLUDE:
 		next_token (&val, (unsigned *)0, cfile);
@@ -792,6 +792,7 @@ int parse_statement (cfile, group, type, host_decl, declaration)
 #endif /* DHCPv6 */
 
 	      default:
+	      log_info("token [%d][%s]",token,val);
 		et = (struct executable_statement *)0;
 		lose = 0;
 		if (!parse_executable_statement (&et, cfile, &lose,
@@ -1529,6 +1530,7 @@ void parse_pool_statement (cfile, group, type)
 				log_fatal ("no memory for permit");
 			next_token (&val, (unsigned *)0, cfile);
 			token = next_token (&val, (unsigned *)0, cfile);
+			log_info("token [%d][%s]",token,val);
 			switch (token) {
 			      case UNKNOWN:
 				permit -> type = permit_unknown_clients;
