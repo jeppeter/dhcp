@@ -1913,8 +1913,11 @@ void parse_host_declaration (cfile, group)
 			option = NULL;
 			status = parse_option_name(cfile, 1, &known, &option);
 			if ((status != ISC_R_SUCCESS) || (option == NULL)) {
+				log_info(" ");
 				break;
 			}
+			log_info("option[%p].name %s .format %s .universe %p code %d refcnt %d",
+				option,option->name,option->format,option->universe,option->code,option->refcnt);
 			if (!known) {
 				parse_warn(cfile, "unknown option %s.%s",
 					   option->universe->name, 
